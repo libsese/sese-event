@@ -1,18 +1,19 @@
 #include "sese/event/EpollEvent.h"
-#include "sese/event/BaseEvent.h"
 
 #include <sys/epoll.h>
+#include <sys/socket.h>
 #include <unistd.h>
 
 #define MAX_EVENT_SIZE 64
 
-sese::event::EpollEvent::EpollEvent(int listenFd) : BaseEvent() {
-    this->listenFd = listenFd;
+bool sese::event::EpollEvent::init() {
     epoll = epoll_create1(0);
+    if (-1 == epoll) return false;
     epoll_event event{};
     event.events = EPOLLIN | EPOLLERR;
     event.data.fd = listenFd;
-    epoll_ctl(epoll, EPOLL_CTL_ADD, listenFd, &event);
+    if (-1 == epoll_ctl(epoll, EPOLL_CTL_ADD, listenFd, &event)) return false;
+    return true;
 }
 
 sese::event::EpollEvent::~EpollEvent() {
@@ -31,20 +32,18 @@ void sese::event::EpollEvent::dispatch() {
             continue;
         }
 
-        for (int i =0; i < numberOfFds; ++i) {
+        for (int i = 0; i < numberOfFds; ++i) {
             auto fd = events[i].data.fd;
             if (fd == listenFd) {
-                onAccept(fd);
-                continue;
+                auto client = accept(fd, nullptr, nullptr);
+                if (-1 == client) continue;
+                onAccept(client, events[i].events);
             } else if (events[i].events & EPOLLIN) {
-                onRead(fd);
-                continue;
+                onRead(fd, events[i].events);
             } else if (events[i].events & EPOLLOUT) {
-                onWrite(fd);
-                continue;
+                onWrite(fd, events[i].events);
             } else if (events[i].events & EPOLLERR) {
-                onError(fd);
-                continue;
+                onError(fd, events[i].events);
             }
         }
     }
@@ -54,18 +53,18 @@ void sese::event::EpollEvent::stop() {
     isShutdown = true;
 }
 
-void sese::event::EpollEvent::onAccept(int fd) {
+void sese::event::EpollEvent::onAccept(int fd, short events) {
 
 }
 
-void sese::event::EpollEvent::onRead(int fd) {
+void sese::event::EpollEvent::onRead(int fd, short events) {
 
 }
 
-void sese::event::EpollEvent::onWrite(int fd) {
+void sese::event::EpollEvent::onWrite(int fd, short events) {
 
 }
 
-void sese::event::EpollEvent::onError(int fd) {
+void sese::event::EpollEvent::onError(int fd, short events) {
 
 }

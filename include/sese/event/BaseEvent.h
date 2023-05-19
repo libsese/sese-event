@@ -2,15 +2,13 @@
 
 #include <cstdint>
 
-namespace sese {
-    namespace event {
-        class BaseEvent;
-    }
+namespace sese::event {
+    class BaseEvent;
 }
 
 class sese::event::BaseEvent {
 public:
-    BaseEvent() = default;
+    virtual bool init() = 0;
 
     virtual ~BaseEvent() = default;
 
@@ -18,11 +16,11 @@ public:
 
     virtual void stop() = 0;
 
-    virtual void onAccept(int fd) = 0;
+    virtual void onAccept(int fd, short events) = 0;
 
-    virtual void onRead(int fd) = 0;
+    virtual void onRead(int fd, short events) = 0;
 
-    virtual void onWrite(int fd) = 0;
+    virtual void onWrite(int fd, short events) = 0;
 
-    virtual void onError(int fd) = 0;
+    virtual void onError(int fd, short events) = 0;
 };

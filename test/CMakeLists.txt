@@ -1,1 +1,10 @@
 find_package(GTest CONFIG REQUIRED)
+
+if (WIN32)
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    add_executable(TestEvent)
+    target_sources(TestEvent PRIVATE TestEpollEvent.cpp)
+    target_link_libraries(TestEvent Event GTest::gtest GTest::gtest_main)
+    add_test(NAME TestEvent COMMAND $<TARGET_FILE:TestEvent>})
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+endif ()

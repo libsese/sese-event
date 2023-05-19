@@ -12,7 +12,7 @@ namespace sese {
 
 class sese::event::EpollEvent : public sese::event::BaseEvent {
 public:
-    explicit EpollEvent(int listenFd);
+    bool init() override;
 
     ~EpollEvent() override;
 
@@ -20,13 +20,16 @@ public:
 
     void stop() override;
 
-    void onAccept(int fd) override;
+    void onAccept(int fd, short events) override;
 
-    void onRead(int fd) override;
+    void onRead(int fd, short events) override;
 
-    void onWrite(int fd) override;
+    void onWrite(int fd, short events) override;
 
-    void onError(int fd) override;
+    void onError(int fd, short events) override;
+
+public:
+    void setListenFd(int fd) { listenFd = fd; }
 
 protected:
     int listenFd{-1};
