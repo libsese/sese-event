@@ -1,0 +1,17 @@
+{
+  "name": "sese-event",
+  "version-string": "0.1.0",
+  "builtin-baseline": "40619a55c3e76dc4005c8d1b7395071471bb8b96",
+  "dependencies": [],
+  "features": {
+    "tests": {
+      "description": "build the unit test targets",
+      "dependencies": [
+        {
+          "name": "gtest",
+          "version>=": "1.13.0"
+        }
+      ]
+    }
+  }
+}
