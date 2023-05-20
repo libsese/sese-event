@@ -2,8 +2,10 @@
 
 #include <cstdint>
 
-namespace sese::event {
-    class BaseEvent;
+namespace sese {
+    namespace event {
+        class BaseEvent;
+    }
 }
 
 class sese::event::BaseEvent {
@@ -23,4 +25,6 @@ public:
     virtual void onWrite(int fd, short events) = 0;
 
     virtual void onError(int fd, short events) = 0;
+
+    virtual void setEvent(int fd, short events) = 0;
 };

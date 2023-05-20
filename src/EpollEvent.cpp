@@ -37,13 +37,13 @@ void sese::event::EpollEvent::dispatch() {
             if (fd == listenFd) {
                 auto client = accept(fd, nullptr, nullptr);
                 if (-1 == client) continue;
-                onAccept(client, events[i].events);
+                onAccept(client, 0);
             } else if (events[i].events & EPOLLIN) {
-                onRead(fd, events[i].events);
+                onRead(fd, convert.fromNativeEvent(events[i].events));
             } else if (events[i].events & EPOLLOUT) {
-                onWrite(fd, events[i].events);
+                onWrite(fd, convert.fromNativeEvent(events[i].events));
             } else if (events[i].events & EPOLLERR) {
-                onError(fd, events[i].events);
+                onError(fd, convert.fromNativeEvent(events[i].events));
             }
         }
     }
@@ -67,4 +67,12 @@ void sese::event::EpollEvent::onWrite(int fd, short events) {
 
 void sese::event::EpollEvent::onError(int fd, short events) {
 
+}
+
+void sese::event::EpollEvent::setEvent(int fd, short events) {
+    epoll_event event{};
+    event.data.fd = fd;
+    event.events = convert.toNativeEvent(events) | EPOLLONESHOT;
+    epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &event);
+    // errno equal EEXIST
 }

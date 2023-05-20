@@ -1,3 +1,4 @@
+#include "sese/event/BaseEventConvert.h"
 #include "sese/event/Event.h"
 #include "gtest/gtest.h"
 
@@ -37,17 +38,29 @@ TEST(TestEvent, Linux) {
     class MyEvent : public sese::event::Event {
     public:
         void onAccept(int fd, short events) override {
-            epoll_event event{};
-            event.data.fd = fd;
-            event.events = events;
-            epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &event);
+            if (0 == setNonblocking(fd)) {
+                this->setEvent(fd, EVENT_READ | EVENT_WRITE);
+            } else {
+                close(fd);
+            }
         }
 
         void onRead(int fd, short events) override {
             char buffer[1024]{};
-            auto len = read(fd, buffer, 1024);
-            // printf("recv %d bytes\n", (int) len);
-            recv += len;
+            while (true) {
+                auto len = read(fd, buffer, 1024);
+                // printf("recv %d bytes\n", (int) len);
+                if (len == -1) {
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        this->setEvent(fd, events);
+                    } else {
+                        close(fd);
+                    }
+                    break;
+                } else {
+                    recv += len;
+                }
+            }
         }
 
         void onWrite(int fd, short events) override {
@@ -80,18 +93,34 @@ TEST(TestEvent, Linux) {
         FAIL();
     }
 
+    char buffer[1024];
     size_t send = 0;
-    for (int i = 0; i < 10; ++i) {
-        auto len = write(client, "Hello Hello Hello!", 18);
+    for (int i = 0; i < 5; ++i) {
+        auto len = write(client, buffer, 1024);
         // printf("send %d bytes\n", (int) len);
         send += len;
     }
 
-    std::this_thread::sleep_for(10s);
+    std::this_thread::sleep_for(3s);
     EXPECT_EQ(event.getRecv(), send);
     event.stop();
     th.join();
 
     close(client);
     close(listenSocket);
+}
+
+TEST(TestEventConvert, Linux) {
+    sese::event::BaseEventConvert *convert = new sese::event::EventConvert();
+    {
+        uint32_t ev1 = EPOLLIN | EPOLLOUT;
+        short ev2 = convert->fromNativeEvent(ev1);
+        ASSERT_EQ(ev2, EVENT_READ | EVENT_WRITE);
+    }
+    {
+        short ev1 = EVENT_ERROR | EVENT_READ;
+        uint32_t ev2 = convert->toNativeEvent(ev1);
+        ASSERT_EQ(ev2, EPOLLERR | EPOLLIN);
+    }
+    delete convert;
 }

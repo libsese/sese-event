@@ -1,6 +1,7 @@
 #pragma once
 
 #include "sese/event/BaseEvent.h"
+#include "sese/event/EpollEventConvert.h"
 
 #include <atomic>
 
@@ -28,6 +29,8 @@ public:
 
     void onError(int fd, short events) override;
 
+    void setEvent(int fd, short events) override;
+
 public:
     void setListenFd(int fd) { listenFd = fd; }
 
@@ -35,4 +38,5 @@ protected:
     int listenFd{-1};
     int epoll{-1};
     std::atomic_bool isShutdown{false};
+    EpollEventConvert convert;
 };

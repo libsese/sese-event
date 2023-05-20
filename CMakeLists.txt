@@ -23,6 +23,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             Event
             PRIVATE
             src/EpollEvent.cpp
+            src/EpollEventConvert.cpp
     )
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 else ()
