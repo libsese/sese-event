@@ -2,7 +2,7 @@
 
 #include <sys/epoll.h>
 
-short sese::event::EpollEventConvert::fromNativeEvent(uint32_t event) {
+unsigned int sese::event::EpollEventConvert::fromNativeEvent(int event) {
     short result = 0;
     if (event & EPOLLIN) {
         result |= EVENT_READ;
@@ -16,8 +16,8 @@ short sese::event::EpollEventConvert::fromNativeEvent(uint32_t event) {
     return result;
 }
 
-uint32_t sese::event::EpollEventConvert::toNativeEvent(short event) {
-    uint32_t result = 0;
+int sese::event::EpollEventConvert::toNativeEvent(unsigned int event) {
+    int result = 0;
     if (event & EVENT_READ) {
         result |= EPOLLIN;
     }

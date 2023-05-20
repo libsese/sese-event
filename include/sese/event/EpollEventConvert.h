@@ -6,9 +6,9 @@ namespace sese {
     namespace event {
         class EpollEventConvert : public BaseEventConvert {
         public:
-            short fromNativeEvent(uint32_t event) override;
+            unsigned int fromNativeEvent(int event) override;
 
-            uint32_t toNativeEvent(short event) override;
+            int toNativeEvent(unsigned int event) override;
         };
     }
 }

@@ -22,7 +22,7 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     target_sources(
             Event
             PRIVATE
-            src/EpollEvent.cpp
+            src/EpollEventLoop.cpp
             src/EpollEventConvert.cpp
     )
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")

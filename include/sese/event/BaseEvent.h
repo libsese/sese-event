@@ -1,30 +1,18 @@
 #pragma once
 
-#include <cstdint>
+#define EVENT_NULL 0x0u
+#define EVENT_READ 0x1u
+#define EVENT_WRITE 0x2u
+#define EVENT_ERROR 0x4u
 
 namespace sese {
     namespace event {
-        class BaseEvent;
+        struct BaseEvent {
+            virtual ~BaseEvent() = default;
+
+            int fd{EVENT_NULL};
+            unsigned int events{0};
+            void *data{nullptr};
+        };
     }
 }
-
-class sese::event::BaseEvent {
-public:
-    virtual bool init() = 0;
-
-    virtual ~BaseEvent() = default;
-
-    virtual void dispatch() = 0;
-
-    virtual void stop() = 0;
-
-    virtual void onAccept(int fd, short events) = 0;
-
-    virtual void onRead(int fd, short events) = 0;
-
-    virtual void onWrite(int fd, short events) = 0;
-
-    virtual void onError(int fd, short events) = 0;
-
-    virtual void setEvent(int fd, short events) = 0;
-};
