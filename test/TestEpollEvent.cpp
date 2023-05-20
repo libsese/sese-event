@@ -77,7 +77,7 @@ TEST(TestEvent, Linux) {
         [[nodiscard]] size_t getRecv() const { return recv; }
 
     protected:
-        size_t recv = 0;
+        std::atomic_long recv{0};
     };
 
     sockaddr_in address{};

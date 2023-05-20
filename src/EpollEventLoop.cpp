@@ -12,18 +12,23 @@
 bool sese::event::EpollEventLoop::init() {
     epoll = epoll_create1(0);
     if (-1 == epoll) return false;
-    epoll_event event{};
-    event.events = EPOLLIN | EPOLLERR;
-    event.data.fd = listenFd;
-    if (-1 == epoll_ctl(epoll, EPOLL_CTL_ADD, listenFd, &event)) return false;
+    if (0 >= listenFd) return true;
+
+    this->listenEvent = this->createEvent(listenFd, EVENT_READ | EVENT_ERROR, nullptr);
+    // 通常不会失败
+    if (!this->listenEvent) return false;
     return true;
 }
 
 sese::event::EpollEventLoop::~EpollEventLoop() {
-    if (!isShutdown) {
-        isShutdown = true;
+    if (-1 != epoll) {
+        close(epoll);
     }
-    close(epoll);
+
+    if (listenEvent) {
+        delete listenEvent;
+        listenEvent = nullptr;
+    }
 }
 
 void sese::event::EpollEventLoop::loop() {
@@ -36,11 +41,15 @@ void sese::event::EpollEventLoop::loop() {
         }
 
         for (int i = 0; i < numberOfFds; ++i) {
-            auto fd = events[i].data.fd;
+            auto event = (BaseEvent *) events[i].data.ptr;
+            auto fd = event->fd;
             if (fd == listenFd) {
                 auto client = accept(fd, nullptr, nullptr);
-                if (-1 == client) continue;
-                onAccept(client);
+                if (-1 != client) {
+                    onAccept(client);
+                } else {
+                    continue;
+                }
             } else if (events[i].events & EPOLLIN) {
                 onRead((BaseEvent *) events[i].data.ptr);
             } else if (events[i].events & EPOLLOUT) {
@@ -81,7 +90,10 @@ sese::event::BaseEvent *sese::event::EpollEventLoop::createEvent(int fd, unsigne
     epoll_event epollEvent{};
     epollEvent.events = convert.toNativeEvent(events);
     epollEvent.data.ptr = event;
-    epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &epollEvent);
+    if (-1 == epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &epollEvent)) {
+        delete event;
+        return nullptr;
+    }
 
     return event;
 }

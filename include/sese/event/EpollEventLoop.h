@@ -36,11 +36,12 @@ public:
 
     bool setEvent(BaseEvent *event) override;
 
-public:
-    void setListenFd(int fd) { listenFd = fd; }
+    void setListenFd(int fd) override { listenFd = fd; }
 
 protected:
     int listenFd{-1};
+    BaseEvent *listenEvent{nullptr};
+
     int epoll{-1};
     std::atomic_bool isShutdown{false};
     EpollEventConvert convert;

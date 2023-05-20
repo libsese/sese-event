@@ -31,4 +31,6 @@ public:
     virtual void freeEvent(BaseEvent *event) = 0;
 
     virtual bool setEvent(BaseEvent *event) = 0;
+
+    virtual void setListenFd(int fd) = 0;
 };
