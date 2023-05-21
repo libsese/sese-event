@@ -17,8 +17,27 @@ target_include_directories(
 )
 
 if (WIN32)
+    set_target_properties(
+            Event
+            PROPERTIES
+            WINDOWS_EXPORT_ALL_SYMBOLS ON
+            OUTPUT_NAME "sese.event"
+    )
     target_compile_options(Event PRIVATE /utf-8)
+    target_sources(
+            Event
+            PRIVATE
+            src/WSAEventLoop.cpp
+            src/WSAEventConvert.cpp
+    )
+    target_link_libraries(Event PRIVATE ws2_32)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    set_target_properties(
+            Event
+            PROPERTIES
+            OUTPUT_NAME "sese.event"
+            PREFIX ""
+    )
     target_sources(
             Event
             PRIVATE
