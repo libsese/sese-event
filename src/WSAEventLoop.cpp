@@ -36,7 +36,7 @@ sese::event::WSAEventLoop::~WSAEventLoop() {
 }
 
 void sese::event::WSAEventLoop::loop() {
-    size_t numbers = 0;
+    DWORD numbers = 0;
     SOCKET sockets[MAX_EVENT_SIZE]{};
     HANDLE wsaEvents[MAX_EVENT_SIZE]{};
     WSAEvent *events[MAX_EVENT_SIZE]{}; // 此处生命周期应由用户复杂
@@ -84,7 +84,7 @@ void sese::event::WSAEventLoop::loop() {
                 WSACloseEvent(wsaEvents[i]);
                 memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
                 memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
-                memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(SOCKET));
+                memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
                 numbers -= 1;
             }
         }
