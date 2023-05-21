@@ -23,6 +23,7 @@ bool sese::event::EpollEventLoop::init() {
 sese::event::EpollEventLoop::~EpollEventLoop() {
     if (-1 != epoll) {
         close(epoll);
+        epoll = -1;
     }
 
     if (listenEvent) {
