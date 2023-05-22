@@ -1,6 +1,11 @@
 find_package(GTest CONFIG REQUIRED)
 
 if (WIN32)
+    add_executable(TestEvent)
+    set_target_properties(TestEvent PROPERTIES CXX_STANDARD 11)
+    target_sources(TestEvent PRIVATE TestWSAEvent.cpp)
+    target_link_libraries(TestEvent Event GTest::gtest)
+    add_test(NAME TestEvent COMMAND $<TARGET_FILE:TestEvent>)
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     add_executable(TestEvent)
     set_target_properties(TestEvent PROPERTIES CXX_STANDARD 11)

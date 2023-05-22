@@ -13,5 +13,22 @@ namespace sese {
         using EventConvert = EpollEventConvert;
     }
 }
+
+#endif
+
+#if defined(WIN32)
+
+#include "sese/event/WSAEvent.h"
+#include "sese/event/WSAEventLoop.h"
+#include "sese/event/WSAEventConvert.h"
+
+namespace sese {
+    namespace event {
+        using Event = BaseEvent;
+        using EventLoop = WSAEventLoop;
+        using EventConvert = WSAEventConvert;
+    }
+}
+
 #endif
 

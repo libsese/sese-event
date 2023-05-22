@@ -5,12 +5,15 @@
 #include "sese/event/WSAEventConvert.h"
 
 #include <atomic>
+#include <mutex>
 
 namespace sese {
     namespace event {
         class WSAEventLoop;
     }
 }
+
+#define MAX_EVENT_SIZE 64
 
 class sese::event::WSAEventLoop : public BaseEventLoop {
 public:
@@ -45,4 +48,12 @@ protected:
     void *wsaEvent{nullptr};
     std::atomic_bool isShutdown{false};
     WSAEventConvert convert;
+
+    std::mutex mutex;
+    unsigned long numbers = 0;
+    unsigned long long sockets[MAX_EVENT_SIZE]{};
+    void *wsaEvents[MAX_EVENT_SIZE]{};
+    WSAEvent *events[MAX_EVENT_SIZE]{}; // 此处生命周期应由用户负责
 };
+
+#undef MAX_EVENT_SIZE
