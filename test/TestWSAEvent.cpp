@@ -4,6 +4,7 @@
 
 #include <thread>
 #include <chrono>
+#include <random>
 #include <Winsock2.h>
 #include <WS2tcpip.h>
 
@@ -15,59 +16,66 @@ int setNonblocking(int fd) {
 }
 
 void makeRandomPortAddress(sockaddr_in &in) {
-    std::srand((unsigned int) std::time(nullptr));       // NOLINT
-    auto port = std::rand() % (65535 - 1024) + 1024; // NOLINT
+    std::random_device device;
+    auto engine = std::default_random_engine(device());
+    std::uniform_int_distribution<int> dis(1025, 65535);
+    auto port = dis(engine);
+
     inet_pton(AF_INET, "127.0.0.1", &in.sin_addr);
     in.sin_family = AF_INET;
     in.sin_port = htons(port);
     printf("select port %d\n", (int) port);
 }
 
-TEST(TestEvent, WindowsRead) {
-    class MyEvent : public sese::event::EventLoop {
-    public:
-        void onAccept(int fd) override {
-            if (0 == setNonblocking(fd)) {
-                this->createEvent(fd, EVENT_READ | EVENT_WRITE, nullptr);
-            } else {
-                closesocket(fd);
-            }
+class MyEvent : public sese::event::EventLoop {
+public:
+    void onAccept(int fd) override {
+        if (0 == setNonblocking(fd)) {
+            this->createEvent(fd, EVENT_READ | EVENT_WRITE, nullptr);
+        } else {
+            closesocket(fd);
         }
+    }
 
-        void onRead(sese::event::BaseEvent *event) override {
-            char buffer[1024]{};
-            while (recv != 1024 * 5) {
-                auto len = ::recv(event->fd, buffer, 1024, 0);
-                // printf("recv %d bytes\n", (int) len);
-                if (len == -1) {
-                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                        this->setEvent(event);
-                    }
+    void onRead(sese::event::BaseEvent *event) override {
+        char buffer[1024]{};
+        while (recv != 1024 * 5) {
+            auto len = ::recv(event->fd, buffer, 1024, 0);
+            // printf("recv %d bytes\n", (int) len);
+            if (len == -1) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    this->setEvent(event);
+                } else if (errno == ENOTCONN) {
                     return;
-                } else {
-                    recv += len;
                 }
+            } else if (len == 0) {
+                return;
+            } else {
+                recv += len;
             }
-            closesocket(event->fd);
-            this->freeEvent(event);
         }
+        closesocket(event->fd);
+        this->freeEvent(event);
+    }
 
-        void onWrite(sese::event::BaseEvent *event) override {
-            printf("on write\n");
-            event->events &= ~EVENT_WRITE;
-            this->setEvent(event);
-        }
+    void onWrite(sese::event::BaseEvent *event) override {
+        printf("on write\n");
+        event->events &= ~EVENT_WRITE;
+        this->setEvent(event);
+    }
 
-        void onClose(sese::event::BaseEvent *event) override {
-            this->freeEvent(event);
-        }
+    void onClose(sese::event::BaseEvent *event) override {
+        this->freeEvent(event);
+        SUCCEED() << "succeed auto to close";
+    }
 
-        [[nodiscard]] size_t getRecv() const { return recv; }
+    [[nodiscard]] size_t getRecv() const { return recv; }
 
-    protected:
-        std::atomic_long recv{0};
-    };
+protected:
+    std::atomic_long recv{0};
+};
 
+TEST(TestEvent, WindowsRead) {
     sockaddr_in address{};
     makeRandomPortAddress(address);
 
@@ -102,6 +110,46 @@ TEST(TestEvent, WindowsRead) {
     th.join();
 
     closesocket(listenSocket);
+    closesocket(client);
+}
+
+TEST(TestEvent, AutoClose) {
+    sockaddr_in address{};
+    makeRandomPortAddress(address);
+
+    auto listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_EQ(setNonblocking((int) listenSocket), 0);
+    ASSERT_EQ(bind(listenSocket, (sockaddr *) &address, sizeof(address)), 0);
+    listen(listenSocket, 255);
+
+    MyEvent event;
+    event.setListenFd((int) listenSocket);
+    ASSERT_TRUE(event.init());
+    auto th = std::thread(std::bind(&MyEvent::loop, &event)); // NOLINT
+
+    auto client = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect(client, (sockaddr *) &address, sizeof(address)) != 0) {
+        event.stop();
+        th.join();
+        FAIL();
+    }
+
+    char buffer[1024]{};
+    size_t send = 0;
+    for (int i = 0; i < 4; ++i) {
+        auto len = ::send(client, buffer, 1024, 0);
+        // printf("send %d bytes\n", (int) len);
+        send += len;
+    }
+
+    std::this_thread::sleep_for(100ms);
+    shutdown(client, SD_BOTH);
+    closesocket(listenSocket);
+    std::this_thread::sleep_for(100ms);
+    EXPECT_EQ(event.getRecv(), send);
+    event.stop();
+    th.join();
+
     closesocket(client);
 }
 
