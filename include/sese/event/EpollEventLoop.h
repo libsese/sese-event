@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sese/event/BaseEvent.h"
 #include "sese/event/EpollEvent.h"
 #include "sese/event/BaseEventLoop.h"
 #include "sese/event/EpollEventConvert.h"
@@ -29,6 +30,8 @@ public:
     void onWrite(BaseEvent *event) override;
 
     void onError(BaseEvent *event) override;
+
+    void onClose(BaseEvent *event) override;
 
     BaseEvent *createEvent(int fd, unsigned int events, void *data) override;
 

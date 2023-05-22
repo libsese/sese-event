@@ -26,6 +26,8 @@ public:
 
     virtual void onError(BaseEvent *event) = 0;
 
+    virtual void onClose(BaseEvent *event) = 0;
+
     virtual BaseEvent *createEvent(int fd, unsigned int events, void *data) = 0;
 
     virtual void freeEvent(BaseEvent *event) = 0;

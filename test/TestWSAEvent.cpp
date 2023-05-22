@@ -1,3 +1,4 @@
+#include "sese/event/BaseEvent.h"
 #include "sese/event/Event.h"
 #include "gtest/gtest.h"
 
@@ -35,28 +36,30 @@ TEST(TestEvent, WindowsRead) {
 
         void onRead(sese::event::BaseEvent *event) override {
             char buffer[1024]{};
-            while (true) {
+            while (recv != 1024 * 5) {
                 auto len = ::recv(event->fd, buffer, 1024, 0);
                 // printf("recv %d bytes\n", (int) len);
                 if (len == -1) {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         this->setEvent(event);
-                    } else {
-                        shutdown(event->fd, SD_BOTH);
-                        closesocket(event->fd);
-                        this->freeEvent(event);
                     }
-                    break;
+                    return;
                 } else {
                     recv += len;
                 }
             }
+            closesocket(event->fd);
+            this->freeEvent(event);
         }
 
         void onWrite(sese::event::BaseEvent *event) override {
             printf("on write\n");
             event->events &= ~EVENT_WRITE;
-            // this->setEvent(event);
+            this->setEvent(event);
+        }
+
+        void onClose(sese::event::BaseEvent *event) override {
+            this->freeEvent(event);
         }
 
         [[nodiscard]] size_t getRecv() const { return recv; }
@@ -100,6 +103,15 @@ TEST(TestEvent, WindowsRead) {
 
     closesocket(listenSocket);
     closesocket(client);
+}
+
+TEST(TestEventConvert, Windows) {
+    sese::event::BaseEventConvert *convert = new sese::event::EventConvert();
+    {
+        int ev1 = FD_READ | FD_WRITE;
+        unsigned ev2 = convert->fromNativeEvent(ev1);
+        ASSERT_EQ(ev2, EVENT_READ | EVENT_WRITE);
+    }
 }
 
 int main(int argc, char *argv[]) {

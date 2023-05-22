@@ -51,11 +51,18 @@ void sese::event::EpollEventLoop::loop() {
                 } else {
                     continue;
                 }
-            } else if (events[i].events & EPOLLIN) {
-                onRead((BaseEvent *) events[i].data.ptr);
-            } else if (events[i].events & EPOLLOUT) {
+            }
+            if (events[i].events & EPOLLIN) {
+                if (events[i].events & EPOLLHUP) {
+                    onClose((BaseEvent *) events[i].data.ptr);
+                } else {
+                    onRead((BaseEvent *) events[i].data.ptr);
+                }
+            }
+            if (events[i].events & EPOLLOUT) {
                 onWrite((BaseEvent *) events[i].data.ptr);
-            } else if (events[i].events & EPOLLERR) {
+            }
+            if (events[i].events & EPOLLERR) {
                 onError((BaseEvent *) events[i].data.ptr);
             }
         }
@@ -82,6 +89,10 @@ void sese::event::EpollEventLoop::onError(BaseEvent *event) {
 
 }
 
+void sese::event::EpollEventLoop::onClose(sese::event::BaseEvent *event) {
+
+}
+
 sese::event::BaseEvent *sese::event::EpollEventLoop::createEvent(int fd, unsigned int events, void *data) {
     auto event = new EpollEvent;
     event->fd = fd;
@@ -89,7 +100,7 @@ sese::event::BaseEvent *sese::event::EpollEventLoop::createEvent(int fd, unsigne
     event->data = data;
 
     epoll_event epollEvent{};
-    epollEvent.events = convert.toNativeEvent(events);
+    epollEvent.events = convert.toNativeEvent(events) | EPOLLHUP;
     epollEvent.data.ptr = event;
     if (-1 == epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &epollEvent)) {
         delete event;
@@ -105,7 +116,7 @@ void sese::event::EpollEventLoop::freeEvent(sese::event::BaseEvent *event) {
 
 bool sese::event::EpollEventLoop::setEvent(sese::event::BaseEvent *event) {
     epoll_event epollEvent{};
-    epollEvent.events = convert.toNativeEvent(event->events);
+    epollEvent.events = convert.toNativeEvent(event->events) | EPOLLHUP;
     epollEvent.data.ptr = event;
 
     auto result = epoll_ctl(epoll, EPOLL_CTL_MOD, event->fd, &epollEvent);

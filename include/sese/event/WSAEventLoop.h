@@ -33,6 +33,8 @@ public:
 
     void onError(BaseEvent *event) override;
 
+    void onClose(BaseEvent *event) override;
+
     BaseEvent *createEvent(int fd, unsigned int events, void *data) override;
 
     void freeEvent(BaseEvent *event) override;

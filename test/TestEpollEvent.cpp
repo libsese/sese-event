@@ -34,7 +34,7 @@ void threadProc(sese::event::EventLoop *event) {
     event->loop();
 }
 
-TEST(TestEvent, Linux) {
+TEST(TestEvent, LinuxRead) {
     class MyEvent : public sese::event::EventLoop {
     public:
         void onAccept(int fd) override {
@@ -47,25 +47,20 @@ TEST(TestEvent, Linux) {
 
         void onRead(sese::event::Event *event) override {
             char buffer[1024]{};
-            while (true) {
+            while (recv != 1024 * 5) {
                 auto len = read(event->fd, buffer, 1024);
                 // printf("recv %d bytes\n", (int) len);
                 if (len == -1) {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) {
                         this->setEvent(event);
-                    } else {
-                        close(event->fd);
-                        this->freeEvent(event);
                     }
-                    break;
+                    return;
                 } else {
                     recv += len;
                 }
             }
-            if (recv == 1024 * 5) {
-                close(event->fd);
-                this->freeEvent(event);
-            }
+            close(event->fd);
+            this->freeEvent(event);
         }
 
         void onWrite(sese::event::Event *event) override {

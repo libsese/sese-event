@@ -64,13 +64,14 @@ void sese::event::WSAEventLoop::loop() {
                 }
             }
             if (enumEvent.lNetworkEvents & FD_CLOSE) {
-                mutex.lock();
-                WSACloseEvent(wsaEvents[i]);
-                memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
-                memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
-                memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
-                numbers -= 1;
-                mutex.unlock();
+                // mutex.lock();
+                // WSACloseEvent(wsaEvents[i]);
+                // memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
+                // memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
+                // memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
+                // numbers -= 1;
+                // mutex.unlock();
+                onClose(events[i]);
             }
             if (enumEvent.lNetworkEvents & FD_READ) {
                 if (enumEvent.iErrorCode[FD_READ_BIT] == 0) {
@@ -116,6 +117,10 @@ void sese::event::WSAEventLoop::onError(sese::event::BaseEvent *event) {
 
 }
 
+void sese::event::WSAEventLoop::onClose(sese::event::BaseEvent *event) {
+
+}
+
 sese::event::BaseEvent *sese::event::WSAEventLoop::createEvent(int fd, unsigned int events, void *data) {
     WSAEVENT _wsaEvent = WSACreateEvent();
     if (WSAEventSelect(fd, _wsaEvent, convert.toNativeEvent(events) | FD_CLOSE)) {
@@ -143,13 +148,11 @@ void sese::event::WSAEventLoop::freeEvent(sese::event::BaseEvent *event) {
     auto ev = reinterpret_cast<WSAEvent *> (event);
     auto i = ev->index;
 
-    mutex.lock();
     WSACloseEvent(wsaEvents[i]);
     memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
     memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
     memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
     numbers -= 1;
-    mutex.unlock();
 
     delete event;
 }

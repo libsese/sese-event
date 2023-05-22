@@ -1,3 +1,9 @@
+# Custom
+.idea
+.fleet
+.vscode
+cmake-build-*
+
 # Prerequisites
 *.d
 
