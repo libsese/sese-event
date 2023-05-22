@@ -45,7 +45,20 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
             src/EpollEventConvert.cpp
     )
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    set_target_properties(
+            Event
+            PROPERTIES
+            OUTPUT_NAME "sese.event"
+            PREFIX ""
+    )
+    target_sources(
+            Event
+            PRIVATE
+            src/KqueueEventLoop.cpp
+            src/KqueueEventConvert.cpp
+    )
 else ()
+    message(FATAL_ERROR "Unknown system type")
 endif ()
 
 option(SESE_EVENT_BUILD_TEST "build unit test targets")
