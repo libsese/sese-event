@@ -53,7 +53,7 @@ void sese::event::EpollEventLoop::loop() {
                 }
             }
             if (events[i].events & EPOLLIN) {
-                if (events[i].events & EPOLLHUP) {
+                if (events[i].events & EPOLLRDHUP) {
                     onClose((BaseEvent *) events[i].data.ptr);
                 } else {
                     onRead((BaseEvent *) events[i].data.ptr);
@@ -100,7 +100,7 @@ sese::event::BaseEvent *sese::event::EpollEventLoop::createEvent(int fd, unsigne
     event->data = data;
 
     epoll_event epollEvent{};
-    epollEvent.events = convert.toNativeEvent(events) | EPOLLHUP;
+    epollEvent.events = convert.toNativeEvent(events) | EPOLLRDHUP;
     epollEvent.data.ptr = event;
     if (-1 == epoll_ctl(epoll, EPOLL_CTL_ADD, fd, &epollEvent)) {
         delete event;
@@ -111,12 +111,13 @@ sese::event::BaseEvent *sese::event::EpollEventLoop::createEvent(int fd, unsigne
 }
 
 void sese::event::EpollEventLoop::freeEvent(sese::event::BaseEvent *event) {
+    epoll_ctl(epoll, EPOLL_CTL_DEL, event->fd, nullptr);
     delete event;
 }
 
 bool sese::event::EpollEventLoop::setEvent(sese::event::BaseEvent *event) {
     epoll_event epollEvent{};
-    epollEvent.events = convert.toNativeEvent(event->events) | EPOLLHUP;
+    epollEvent.events = convert.toNativeEvent(event->events) | EPOLLRDHUP;
     epollEvent.data.ptr = event;
 
     auto result = epoll_ctl(epoll, EPOLL_CTL_MOD, event->fd, &epollEvent);
