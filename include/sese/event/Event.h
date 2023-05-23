@@ -32,3 +32,16 @@ namespace sese {
 
 #endif
 
+#if defined(__APPLE__)
+
+#include "sese/event/KqueueEvent.h"
+#include "sese/event/KqueueEventLoop.h"
+
+namespace sese {
+    namespace event {
+        using Event = BaseEvent;
+        using EventLoop = KqueueEventLoop;
+    }
+}
+
+#endif

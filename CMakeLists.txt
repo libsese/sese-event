@@ -55,7 +55,6 @@ elseif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
             Event
             PRIVATE
             src/KqueueEventLoop.cpp
-            src/KqueueEventConvert.cpp
     )
 else ()
     message(FATAL_ERROR "Unknown system type")

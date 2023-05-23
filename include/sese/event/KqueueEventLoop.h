@@ -2,7 +2,6 @@
 
 #include "sese/event/KqueueEvent.h"
 #include "sese/event/BaseEventLoop.h"
-#include "sese/event/KqueueEventConvert.h"
 
 #include <atomic>
 
@@ -41,10 +40,14 @@ public:
     void setListenFd(int fd) override { listenFd = fd; }
 
 protected:
+    bool addNativeEvent(int fd, uint32_t ev, void *data) const;
+
+    bool delNativeEvent(int fd, uint32_t ev, void *data) const;
+
+protected:
     int listenFd{-1};
     BaseEvent *listenEvent{nullptr};
 
     int kqueue{-1};
     std::atomic_bool isShutdown{false};
-    KqueueEventConvert convert;
 };

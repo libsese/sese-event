@@ -10,4 +10,5 @@ namespace sese {
 
 class sese::event::KqueueEvent : public BaseEvent {
 public:
+    unsigned int oldEvents{EVENT_NULL};
 };
