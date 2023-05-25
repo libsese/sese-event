@@ -76,8 +76,19 @@ public:
 
     [[nodiscard]] size_t getRecv() const { return recv; }
 
+    void loop() {
+        while(run) {
+            this->dispatch(1000);
+        }
+    }
+
+    void stop() {
+        run = false;
+    }
+
 protected:
     std::atomic_long recv{0};
+    std::atomic_bool run{true};
 };
 
 TEST(TestEvent, DarwinRead) {
@@ -92,7 +103,7 @@ TEST(TestEvent, DarwinRead) {
     MyEvent event;
     event.setListenFd(listenSocket);
     ASSERT_TRUE(event.init());
-    auto th = std::thread(std::bind(&MyEvent::dispatch, &event)); // NOLINT
+    auto th = std::thread(std::bind(&MyEvent::loop, &event)); // NOLINT
 
     auto client = socket(AF_INET, SOCK_STREAM, 0);
     if (connect(client, (sockaddr *) &address, sizeof(address)) != 0) {
@@ -130,7 +141,7 @@ TEST(TestEvent, AutoClose) {
     MyEvent event;
     event.setListenFd(listenSocket);
     ASSERT_TRUE(event.init());
-    auto th = std::thread(std::bind(&MyEvent::dispatch, &event)); // NOLINT
+    auto th = std::thread(std::bind(&MyEvent::loop, &event)); // NOLINT
 
     auto client = socket(AF_INET, SOCK_STREAM, 0);
     if (connect(client, (sockaddr *) &address, sizeof(address)) != 0) {

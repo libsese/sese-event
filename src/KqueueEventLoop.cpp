@@ -4,6 +4,8 @@
 #include <sys/event.h>
 #include <sys/socket.h>
 
+#include <cmath>
+
 #define MAX_EVENT_SIZE 64
 
 bool sese::event::KqueueEventLoop::init() {
@@ -16,7 +18,7 @@ bool sese::event::KqueueEventLoop::init() {
     this->listenEvent->events = EVENT_NULL;
     this->listenEvent->data = nullptr;
 
-    struct kevent kevent{};
+    struct kevent kevent {};
     EV_SET(&kevent, listenFd, EVFILT_READ, EV_ADD | EV_ENABLE, 0, 0, this->listenEvent);
     // 通常不会失败
     if (-1 == ::kevent(kqueue, &kevent, 1, nullptr, 0, nullptr)) {
@@ -43,68 +45,60 @@ sese::event::KqueueEventLoop::~KqueueEventLoop() {
     }
 }
 
-void sese::event::KqueueEventLoop::dispatch(uint32_t timeout) {
-    struct kevent events[MAX_EVENT_SIZE]{};
-    struct timespec timeout{};
+void sese::event::KqueueEventLoop::dispatch(uint32_t time) {
+    struct kevent events[MAX_EVENT_SIZE] {};
+    auto div = ldiv(time, 1000);
+    struct timespec timeout {
+        div.quot, div.rem * 1000000
+    };
 
-    while(!isShutdown) {
-        auto numberOfFds = ::kevent(kqueue, nullptr, 0, events, MAX_EVENT_SIZE, &timeout);
-        if (-1 == numberOfFds) continue;
-        for (int i = 0; i < numberOfFds; ++i) {
-            auto event = reinterpret_cast<BaseEvent *>(events[i].udata);
-            if (events[i].ident == listenFd) {
-                auto client = accept(listenFd, nullptr, nullptr);
-                if (client == -1) continue;
-                onAccept(client);
+    auto numberOfFds = ::kevent(kqueue, nullptr, 0, events, MAX_EVENT_SIZE, &timeout);
+    if (-1 == numberOfFds) return;
+    for (int i = 0; i < numberOfFds; ++i) {
+        auto event = reinterpret_cast<BaseEvent *>(events[i].udata);
+        if (events[i].ident == listenFd) {
+            auto client = accept(listenFd, nullptr, nullptr);
+            if (client == -1) continue;
+            onAccept(client);
+            continue;
+        }
+
+        if (events[i].filter == EVFILT_READ) {
+            if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
+                onError(event);
+            }
+
+            if (events[i].flags & EV_EOF) {
+                onClose(event);
                 continue;
             }
 
-            if (events[i].filter == EVFILT_READ) {
-                if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
-                    onError(event);
-                }
-
-                if (events[i].flags & EV_EOF) {
-                    onClose(event);
-                    continue;
-                }
-
-                if (events[i].flags == EV_ERROR | events[i].flags == EV_EOF) continue;
-                onRead(event);
-            } else if (events[i].filter == EVFILT_WRITE) {
-                if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
-                    onError(event);
-                    continue;
-                }
-
-                onWrite(reinterpret_cast<BaseEvent *>(events[i].udata));
+            if (events[i].flags == EV_ERROR | events[i].flags == EV_EOF) continue;
+            onRead(event);
+        } else if (events[i].filter == EVFILT_WRITE) {
+            if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
+                onError(event);
+                continue;
             }
+
+            onWrite(reinterpret_cast<BaseEvent *>(events[i].udata));
         }
     }
 }
 
-void sese::event::KqueueEventLoop::stop() {
-    isShutdown = true;
-}
-
 void sese::event::KqueueEventLoop::onAccept(int fd) {
-
 }
 
 void sese::event::KqueueEventLoop::onRead(sese::event::BaseEvent *event) {
-
 }
 
 void sese::event::KqueueEventLoop::onWrite(sese::event::BaseEvent *event) {
-
 }
 
 void sese::event::KqueueEventLoop::onError(sese::event::BaseEvent *event) {
-
 }
 
 void sese::event::KqueueEventLoop::onClose(sese::event::BaseEvent *event) {
-
 }
 
 bool sese::event::KqueueEventLoop::addNativeEvent(int fd, uint32_t ev, void *data) const {
@@ -114,7 +108,7 @@ bool sese::event::KqueueEventLoop::addNativeEvent(int fd, uint32_t ev, void *dat
 }
 
 bool sese::event::KqueueEventLoop::delNativeEvent(int fd, uint32_t ev, void *data) const {
-    struct kevent kevent{};
+    struct kevent kevent {};
     EV_SET(&kevent, fd, ev, EV_DELETE, 0, 0, data);
     return 0 == ::kevent(kqueue, &kevent, 1, nullptr, 0, nullptr);
 }
@@ -126,7 +120,7 @@ sese::event::BaseEvent *sese::event::KqueueEventLoop::createEvent(int fd, unsign
     event->oldEvents = events;
     event->data = data;
 
-    if (!(events & EVENT_READ && addNativeEvent(fd, EVFILT_READ, event)) ){
+    if (!(events & EVENT_READ && addNativeEvent(fd, EVFILT_READ, event))) {
         delete event;
         return nullptr;
     }

@@ -45,7 +45,5 @@ protected:
 protected:
     int listenFd{-1};
     BaseEvent *listenEvent{nullptr};
-
     int kqueue{-1};
-    std::atomic_bool isShutdown{false};
 };
