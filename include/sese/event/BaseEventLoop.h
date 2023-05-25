@@ -2,6 +2,8 @@
 
 #include "sese/event/EpollEvent.h"
 
+#include <cstdint>
+
 namespace sese {
     namespace event {
         class BaseEventLoop;
@@ -14,9 +16,7 @@ public:
 
     virtual ~BaseEventLoop() = default;
 
-    virtual void loop() = 0;
-
-    virtual void stop() = 0;
+    virtual void dispatch(uint32_t timeout) = 0;
 
     virtual void onAccept(int fd) = 0;
 

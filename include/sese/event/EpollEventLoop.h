@@ -5,8 +5,6 @@
 #include "sese/event/BaseEventLoop.h"
 #include "sese/event/EpollEventConvert.h"
 
-#include <atomic>
-
 namespace sese {
     namespace event {
         class EpollEventLoop;
@@ -19,9 +17,7 @@ public:
 
     ~EpollEventLoop() override;
 
-    void loop() override;
-
-    void stop() override;
+    void dispatch(uint32_t timeout) override;
 
     void onAccept(int fd) override;
 
@@ -46,6 +42,5 @@ protected:
     BaseEvent *listenEvent{nullptr};
 
     int epoll{-1};
-    std::atomic_bool isShutdown{false};
     EpollEventConvert convert;
 };

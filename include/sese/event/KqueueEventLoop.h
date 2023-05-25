@@ -17,9 +17,7 @@ public:
 
     ~KqueueEventLoop() override;
 
-    void loop() override;
-
-    void stop() override;
+    void dispatch(uint32_t timeout) override;
 
     void onAccept(int fd) override;
 

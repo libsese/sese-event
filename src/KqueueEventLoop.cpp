@@ -43,7 +43,7 @@ sese::event::KqueueEventLoop::~KqueueEventLoop() {
     }
 }
 
-void sese::event::KqueueEventLoop::loop() {
+void sese::event::KqueueEventLoop::dispatch(uint32_t timeout) {
     struct kevent events[MAX_EVENT_SIZE]{};
     struct timespec timeout{};
 

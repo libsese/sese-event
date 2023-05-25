@@ -18,6 +18,11 @@ bool sese::event::WSAEventLoop::init() {
     this->listenEvent->fd = listenFd;
     this->listenEvent->wsaEvent = wsaEvent;
 
+    sockets[0] = listenFd;
+    wsaEvents[0] = listenEvent->wsaEvent;
+    events[0] = listenEvent;
+    numbers += 1;
+
     return true;
 }
 
@@ -33,72 +38,59 @@ sese::event::WSAEventLoop::~WSAEventLoop() {
     }
 }
 
-void sese::event::WSAEventLoop::loop() {
-    if (listenFd > 0) {
-        sockets[0] = listenFd;
-        wsaEvents[0] = listenEvent->wsaEvent;
-        events[0] = listenEvent;
-        numbers += 1;
-    }
+void sese::event::WSAEventLoop::dispatch(uint32_t timeout) {
+    DWORD nIndex = WSAWaitForMultipleEvents(numbers, wsaEvents, FALSE, timeout, FALSE);
+    if (nIndex == WSA_WAIT_FAILED || nIndex == WSA_WAIT_TIMEOUT) return;
 
-    while (!isShutdown) {
-        DWORD nIndex = WSAWaitForMultipleEvents(numbers, wsaEvents, FALSE, 1000, FALSE);
+    nIndex -= WSA_WAIT_EVENT_0;
+    for (DWORD i = nIndex; i < numbers; ++i) {
+        nIndex = ::WSAWaitForMultipleEvents(1, &wsaEvents[i], TRUE, timeout, FALSE);
         if (nIndex == WSA_WAIT_FAILED || nIndex == WSA_WAIT_TIMEOUT) continue;
 
-        nIndex -= WSA_WAIT_EVENT_0;
-        for (DWORD i = nIndex; i < numbers; ++i) {
-            nIndex = ::WSAWaitForMultipleEvents(1, &wsaEvents[i], TRUE, 1000, FALSE);
-            if (nIndex == WSA_WAIT_FAILED || nIndex == WSA_WAIT_TIMEOUT) continue;
-
-            events[i]->index = (int) i;
-            WSANETWORKEVENTS enumEvent;
-            WSAEnumNetworkEvents(sockets[i], wsaEvents[i], &enumEvent);
-            if (enumEvent.lNetworkEvents & FD_ACCEPT) {
-                if (enumEvent.iErrorCode[FD_ACCEPT_BIT] == 0) {
-                    SOCKET client = accept(sockets[i], nullptr, nullptr);
-                    if (-1 != client) {
-                        onAccept((int) client);
-                    }
-                } else if (enumEvent.iErrorCode[FD_ACCEPT_BIT] != 0 && events[i]->events & EVENT_ERROR) {
-                    onError(events[i]);
+        events[i]->index = (int) i;
+        WSANETWORKEVENTS enumEvent;
+        WSAEnumNetworkEvents(sockets[i], wsaEvents[i], &enumEvent);
+        if (enumEvent.lNetworkEvents & FD_ACCEPT) {
+            if (enumEvent.iErrorCode[FD_ACCEPT_BIT] == 0) {
+                SOCKET client = accept(sockets[i], nullptr, nullptr);
+                if (-1 != client) {
+                    onAccept((int) client);
                 }
+            } else if (enumEvent.iErrorCode[FD_ACCEPT_BIT] != 0 && events[i]->events & EVENT_ERROR) {
+                onError(events[i]);
             }
-            if (enumEvent.lNetworkEvents & FD_CLOSE) {
-                // mutex.lock();
-                // WSACloseEvent(wsaEvents[i]);
-                // memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
-                // memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
-                // memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
-                // numbers -= 1;
-                // mutex.unlock();
-                onClose(events[i]);
-            }
-            if (enumEvent.lNetworkEvents & FD_READ) {
-                if (enumEvent.iErrorCode[FD_READ_BIT] == 0) {
-                    char buf;
-                    if (1 == recv(sockets[i], &buf, 1, MSG_PEEK)) {
-                        onRead(events[i]);
-                    }
-                } else if (enumEvent.iErrorCode[FD_READ_BIT] != 0 && events[i]->events & EVENT_ERROR) {
-                    onError(events[i]);
+        }
+        if (enumEvent.lNetworkEvents & FD_CLOSE) {
+            // mutex.lock();
+            // WSACloseEvent(wsaEvents[i]);
+            // memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
+            // memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
+            // memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
+            // numbers -= 1;
+            // mutex.unlock();
+            onClose(events[i]);
+        }
+        if (enumEvent.lNetworkEvents & FD_READ) {
+            if (enumEvent.iErrorCode[FD_READ_BIT] == 0) {
+                char buf;
+                if (1 == recv(sockets[i], &buf, 1, MSG_PEEK)) {
+                    onRead(events[i]);
                 }
+            } else if (enumEvent.iErrorCode[FD_READ_BIT] != 0 && events[i]->events & EVENT_ERROR) {
+                onError(events[i]);
             }
-            if (enumEvent.lNetworkEvents & FD_WRITE) {
-                if (enumEvent.iErrorCode[FD_WRITE_BIT] == 0) {
-                    char buf;
-                    if (0 == send(sockets[i], &buf, 0, 0)) {
-                        onWrite(events[i]);
-                    }
-                } else if (enumEvent.iErrorCode[FD_WRITE_BIT] != 0 && events[i]->events & EVENT_ERROR) {
-                    onError(events[i]);
+        }
+        if (enumEvent.lNetworkEvents & FD_WRITE) {
+            if (enumEvent.iErrorCode[FD_WRITE_BIT] == 0) {
+                char buf;
+                if (0 == send(sockets[i], &buf, 0, 0)) {
+                    onWrite(events[i]);
                 }
+            } else if (enumEvent.iErrorCode[FD_WRITE_BIT] != 0 && events[i]->events & EVENT_ERROR) {
+                onError(events[i]);
             }
         }
     }
-}
-
-void sese::event::WSAEventLoop::stop() {
-    isShutdown = true;
 }
 
 void sese::event::WSAEventLoop::onAccept(int fd) {

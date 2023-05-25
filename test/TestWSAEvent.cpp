@@ -69,10 +69,21 @@ public:
         SUCCEED() << "succeed auto to close";
     }
 
+    void loop () {
+        while(run) {
+            this->dispatch(1000);
+        }
+    }
+
+    void stop() {
+        run = false;
+    }
+
     [[nodiscard]] size_t getRecv() const { return recv; }
 
 protected:
     std::atomic_long recv{0};
+    std::atomic_bool run{true};
 };
 
 TEST(TestEvent, WindowsRead) {

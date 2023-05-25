@@ -32,45 +32,39 @@ sese::event::EpollEventLoop::~EpollEventLoop() {
     }
 }
 
-void sese::event::EpollEventLoop::loop() {
+void sese::event::EpollEventLoop::dispatch(uint32_t timeout) {
     epoll_event events[MAX_EVENT_SIZE]{};
 
-    while (!isShutdown) {
-        int numberOfFds = epoll_wait(epoll, events, MAX_EVENT_SIZE, 0);
-        if (-1 == numberOfFds) {
-            continue;
-        }
+    int numberOfFds = epoll_wait(epoll, events, MAX_EVENT_SIZE, (int) timeout);
+    if (-1 == numberOfFds) {
+        return;
+    }
 
-        for (int i = 0; i < numberOfFds; ++i) {
-            auto event = (BaseEvent *) events[i].data.ptr;
-            auto fd = event->fd;
-            if (fd == listenFd) {
-                auto client = accept(fd, nullptr, nullptr);
-                if (-1 != client) {
-                    onAccept(client);
-                } else {
-                    continue;
-                }
+    for (int i = 0; i < numberOfFds; ++i) {
+        auto event = (BaseEvent *) events[i].data.ptr;
+        auto fd = event->fd;
+        if (fd == listenFd) {
+            auto client = accept(fd, nullptr, nullptr);
+            if (-1 != client) {
+                onAccept(client);
+            } else {
+                continue;
             }
-            if (events[i].events & EPOLLIN) {
-                if (events[i].events & EPOLLRDHUP) {
-                    onClose((BaseEvent *) events[i].data.ptr);
-                } else {
-                    onRead((BaseEvent *) events[i].data.ptr);
-                }
+        }
+        if (events[i].events & EPOLLIN) {
+            if (events[i].events & EPOLLRDHUP) {
+                onClose((BaseEvent *) events[i].data.ptr);
+            } else {
+                onRead((BaseEvent *) events[i].data.ptr);
             }
-            if (events[i].events & EPOLLOUT) {
-                onWrite((BaseEvent *) events[i].data.ptr);
-            }
-            if (events[i].events & EPOLLERR) {
-                onError((BaseEvent *) events[i].data.ptr);
-            }
+        }
+        if (events[i].events & EPOLLOUT) {
+            onWrite((BaseEvent *) events[i].data.ptr);
+        }
+        if (events[i].events & EPOLLERR) {
+            onError((BaseEvent *) events[i].data.ptr);
         }
     }
-}
-
-void sese::event::EpollEventLoop::stop() {
-    isShutdown = true;
 }
 
 void sese::event::EpollEventLoop::onAccept(int fd) {

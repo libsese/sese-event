@@ -21,9 +21,7 @@ public:
 
     bool init() override;
 
-    void loop() override;
-
-    void stop() override;
+    void dispatch(uint32_t timeout) override;
 
     void onAccept(int fd) override;
 
@@ -48,7 +46,6 @@ protected:
     WSAEvent *listenEvent{nullptr};
 
     void *wsaEvent{nullptr};
-    std::atomic_bool isShutdown{false};
     WSAEventConvert convert;
 
     std::mutex mutex;
