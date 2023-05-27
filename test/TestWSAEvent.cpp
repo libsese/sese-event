@@ -173,6 +173,99 @@ TEST(TestEventConvert, Windows) {
     }
 }
 
+// 1000M
+#define ALL_PACKAGES_SIZE (1024 * 1000 * 1000)
+// 5K
+#define PACKAGE_SIZE (1024 * 5)
+
+class MyEvent1 : public sese::event::EventLoop {
+public:
+    void onAccept(int fd) override {
+        if (0 == setNonblocking(fd)) {
+            createEvent(fd, EVENT_WRITE, nullptr);
+        } else {
+            closesocket(fd);
+        }
+    }
+
+    void onWrite(sese::event::BaseEvent *event) override {
+        char buffer[PACKAGE_SIZE]{};
+        while (send < ALL_PACKAGES_SIZE) {
+            auto toWrite = ALL_PACKAGES_SIZE - send >= PACKAGE_SIZE ? PACKAGE_SIZE : ALL_PACKAGES_SIZE - send;
+            auto l = ::send(event->fd, buffer, toWrite, 0);
+            if (-1 == l) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {
+                    SUCCEED() << "wait for next time";
+                    this->setEvent(event);
+                } else if (errno == ENOTCONN) {
+                    FAIL();
+                    return;
+                }
+            } else {
+                send += l;
+            }
+        }
+        closesocket(event->fd);
+        freeEvent(event);
+    }
+
+    void loop() {
+        while (run) {
+            this->dispatch(1000);
+        }
+    }
+
+    void stop() {
+        run = false;
+    }
+
+    long getSend() const {
+        return send;
+    }
+
+protected:
+    std::atomic_long send{0};
+    std::atomic_bool run{true};
+};
+
+TEST(TestEvent, WindowsWrite) {
+    sockaddr_in address{};
+    makeRandomPortAddress(address);
+
+    auto listenSocket = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_EQ(setNonblocking((int) listenSocket), 0);
+    ASSERT_EQ(bind(listenSocket, (sockaddr *) &address, sizeof(address)), 0);
+    listen(listenSocket, 255);
+
+    MyEvent1 event;
+    event.setListenFd((int) listenSocket);
+    ASSERT_TRUE(event.init());
+    auto th = std::thread(std::bind(&MyEvent1::loop, &event)); // NOLINT
+
+    auto client = socket(AF_INET, SOCK_STREAM, 0);
+    if (connect(client, (sockaddr *) &address, sizeof(address)) != 0) {
+        event.stop();
+        th.join();
+        FAIL();
+    }
+
+    char buffer[PACKAGE_SIZE];
+    size_t recv = 0;
+    while (recv < ALL_PACKAGES_SIZE) {
+        auto toRead = ALL_PACKAGES_SIZE - recv >= PACKAGE_SIZE ? PACKAGE_SIZE : ALL_PACKAGES_SIZE - recv;
+        auto l = ::recv(client, buffer, (int) toRead, 0);
+        recv += l;
+    }
+
+    std::this_thread::sleep_for(100ms);
+    EXPECT_EQ(event.getSend(), recv);
+    event.stop();
+    th.join();
+
+    closesocket(client);
+    closesocket(listenSocket);
+}
+
 int main(int argc, char *argv[]) {
     WSADATA wsaData;
     WSAStartup(MAKEWORD(2, 2), &wsaData);
