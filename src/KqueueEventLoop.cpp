@@ -74,7 +74,9 @@ void sese::event::KqueueEventLoop::dispatch(uint32_t time) {
             }
 
             if (events[i].flags == EV_ERROR | events[i].flags == EV_EOF) continue;
-            onRead(event);
+            if (event->events & EVENT_READ) {
+                onRead(event);
+            }
         } else if (events[i].filter == EVFILT_WRITE) {
             if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
                 onError(event);
@@ -120,12 +122,17 @@ sese::event::BaseEvent *sese::event::KqueueEventLoop::createEvent(int fd, unsign
     event->oldEvents = events;
     event->data = data;
 
-    if (events & EVENT_READ) {
-        if (!addNativeEvent(fd, EVFILT_READ, event)) {
-            // 通常不会出错
-            delete event;
-            return nullptr;
-        }
+    // if (events & EVENT_READ) {
+    //     if (!addNativeEvent(fd, EVFILT_READ, event)) {
+    //         // 通常不会出错
+    //         delete event;
+    //         return nullptr;
+    //     }
+    // }
+    if (!addNativeEvent(fd, EVFILT_READ, event)) {
+        // 通常不会出错
+        delete event;
+        return nullptr;
     }
 
     if(events & EVENT_WRITE) {
@@ -142,9 +149,10 @@ sese::event::BaseEvent *sese::event::KqueueEventLoop::createEvent(int fd, unsign
 void sese::event::KqueueEventLoop::freeEvent(sese::event::BaseEvent *event) {
     auto fd = event->fd;
     auto events = event->events;
-    if (events & EVENT_READ) {
-        delNativeEvent(fd, EVFILT_READ, event);
-    }
+    // if (events & EVENT_READ) {
+    //    delNativeEvent(fd, EVFILT_READ, event);
+    // }
+    delNativeEvent(fd, EVFILT_READ, event);
 
     if (events & EVENT_WRITE) {
         delNativeEvent(fd, EVFILT_WRITE, event);
@@ -158,14 +166,14 @@ bool sese::event::KqueueEventLoop::setEvent(sese::event::BaseEvent *event) {
     bool rt1 = true;
     bool rt2 = true;
 
-    if (e->oldEvents & EVENT_READ && !(e->events & EVENT_READ)) {
-        // 原先存在的事件，现在需要删除
-        rt1 = delNativeEvent(e->fd, EVFILT_READ, event);
-    } else if (e->events & EVENT_READ) {
-        // 原先存在的事件，需要重新启用
-        // 原先不存在的事件，需要添加
-        rt1 = addNativeEvent(e->fd, EVFILT_READ, event);
-    }
+    // if (e->oldEvents & EVENT_READ && !(e->events & EVENT_READ)) {
+    //     // 原先存在的事件，现在需要删除
+    //     rt1 = delNativeEvent(e->fd, EVFILT_READ, event);
+    // } else if (e->events & EVENT_READ) {
+    //     // 原先存在的事件，需要重新启用
+    //     // 原先不存在的事件，需要添加
+    //     rt1 = addNativeEvent(e->fd, EVFILT_READ, event);
+    // }
 
     if (e->oldEvents & EVENT_WRITE && !(e->events & EVENT_WRITE)) {
         // 原先存在的事件，现在需要删除

@@ -4,9 +4,9 @@
 
 unsigned int sese::event::EpollEventConvert::fromNativeEvent(int event) {
     short result = 0;
-    if (event & EPOLLIN) {
-        result |= EVENT_READ;
-    }
+    // if (event & EPOLLIN) {
+    //     result |= EVENT_READ;
+    // }
     if (event & EPOLLOUT) {
         result |= EVENT_WRITE;
     }

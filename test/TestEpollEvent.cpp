@@ -175,7 +175,7 @@ TEST(TestEventConvert, Linux) {
     {
         int ev1 = EPOLLIN | EPOLLOUT;
         unsigned ev2 = convert->fromNativeEvent(ev1);
-        ASSERT_EQ(ev2, EVENT_READ | EVENT_WRITE);
+        ASSERT_EQ(ev2, EVENT_WRITE);
     }
     {
         unsigned ev1 = EVENT_ERROR | EVENT_READ;
