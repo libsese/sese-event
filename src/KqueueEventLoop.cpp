@@ -120,14 +120,20 @@ sese::event::BaseEvent *sese::event::KqueueEventLoop::createEvent(int fd, unsign
     event->oldEvents = events;
     event->data = data;
 
-    if (!(events & EVENT_READ && addNativeEvent(fd, EVFILT_READ, event))) {
-        delete event;
-        return nullptr;
+    if (events & EVENT_READ) {
+        if (!addNativeEvent(fd, EVFILT_READ, event)) {
+            // 通常不会出错
+            delete event;
+            return nullptr;
+        }
     }
 
-    if (!(events & EVENT_WRITE && addNativeEvent(fd, EVFILT_WRITE, event))) {
-        delete event;
-        return nullptr;
+    if(events & EVENT_WRITE) {
+        if (!addNativeEvent(fd, EVFILT_WRITE, event)) {
+            // 通常不会出错
+            delete event;
+            return nullptr;
+        }
     }
 
     return event;
@@ -143,6 +149,8 @@ void sese::event::KqueueEventLoop::freeEvent(sese::event::BaseEvent *event) {
     if (events & EVENT_WRITE) {
         delNativeEvent(fd, EVFILT_WRITE, event);
     }
+
+    delete event;
 }
 
 bool sese::event::KqueueEventLoop::setEvent(sese::event::BaseEvent *event) {
