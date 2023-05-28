@@ -66,3 +66,41 @@ if (SESE_EVENT_BUILD_TEST)
     enable_testing()
     add_subdirectory(test)
 endif ()
+
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+        ${PROJECT_SOURCE_DIR}/cmake/sese-event-config.cmake.in
+        ${PROJECT_BINARY_DIR}/sese-event-config.cmake
+        INSTALL_DESTINATION lib/cmake/sese-event
+)
+
+install(
+        TARGETS Event
+        EXPORT SeseEventTargets
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib
+        ARCHIVE DESTINATION lib
+        PUBLIC_HEADER DESTINATION include
+)
+
+install(
+        DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/include/sese"
+        DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+)
+
+install(
+        FILES "${PROJECT_BINARY_DIR}/sese-event-config.cmake"
+        DESTINATION lib/cmake/sese-event
+)
+
+install(
+        FILES "${PROJECT_BINARY_DIR}/sese-event-config.cmake"
+        DESTINATION debug/lib/cmake/sese-event
+)
+
+install(
+        EXPORT SeseEventTargets
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/sese-event
+        NAMESPACE Sese::
+)
