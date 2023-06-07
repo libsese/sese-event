@@ -47,7 +47,6 @@ void sese::event::WSAEventLoop::dispatch(uint32_t timeout) {
         nIndex = ::WSAWaitForMultipleEvents(1, &wsaEvents[i], TRUE, timeout, FALSE);
         if (nIndex == WSA_WAIT_FAILED || nIndex == WSA_WAIT_TIMEOUT) continue;
 
-        events[i]->index = (int) i;
         WSANETWORKEVENTS enumEvent;
         WSAEnumNetworkEvents(sockets[i], wsaEvents[i], &enumEvent);
         if (enumEvent.lNetworkEvents & FD_ACCEPT) {
@@ -138,13 +137,25 @@ sese::event::BaseEvent *sese::event::WSAEventLoop::createEvent(int fd, unsigned 
 
 void sese::event::WSAEventLoop::freeEvent(sese::event::BaseEvent *event) {
     auto ev = reinterpret_cast<WSAEvent *> (event);
-    auto i = ev->index;
 
-    WSACloseEvent(wsaEvents[i]);
-    memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
-    memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
-    memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
-    numbers -= 1;
+    bool found = false;
+    unsigned long i = 0;
+    for (; i < numbers; ++i) {
+        if (event->fd == sockets[i]) {
+            found = true;
+            break;
+        }
+    }
+
+    if (found) {
+        WSACloseEvent(wsaEvents[i]);
+        memmove(&sockets[i], &sockets[i], (numbers - i - 1) * sizeof(SOCKET));
+        memmove(&wsaEvents[i], &wsaEvents[i], (numbers - i - 1) * sizeof(HANDLE));
+        memmove(&events[i], &events[i], (numbers - i - 1) * sizeof(WSAEvent *));
+        numbers -= 1;
+    } else {
+        // 这一般不会发生
+    }
 
     delete event;
 }
