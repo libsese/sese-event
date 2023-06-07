@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(sese.event VERSION 0.1.0)
+project(sese.event VERSION 0.1.1)
 
 add_library(Event)
 
