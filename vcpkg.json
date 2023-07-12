@@ -1,6 +1,6 @@
 {
   "name": "sese-event",
-  "version-string": "0.1.1",
+  "version-string": "0.1.2",
   "builtin-baseline": "40619a55c3e76dc4005c8d1b7395071471bb8b96",
   "dependencies": [],
   "features": {
