@@ -16,7 +16,7 @@ namespace sese {
 
 #endif
 
-#if defined(WIN32)
+#if defined(_WIN32)
 
 #include "sese/event/WSAEvent.h"
 #include "sese/event/WSAEventLoop.h"
