@@ -46,7 +46,7 @@ sese::event::KqueueEventLoop::~KqueueEventLoop() {
 }
 
 void sese::event::KqueueEventLoop::dispatch(uint32_t time) {
-    struct kevent events[MAX_EVENT_SIZE] {};
+    struct kevent events[MAX_EVENT_SIZE]{};
     auto div = ldiv(time, 1000);
     struct timespec timeout {
         div.quot, div.rem * 1000000
@@ -61,29 +61,29 @@ void sese::event::KqueueEventLoop::dispatch(uint32_t time) {
             if (client == -1) continue;
             onAccept(client);
             continue;
-        }
+        } else {
+            if (events[i].filter == EVFILT_READ) {
+                if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
+                    onError(event);
+                }
 
-        if (events[i].filter == EVFILT_READ) {
-            if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
-                onError(event);
-            }
+                if (events[i].flags & EV_EOF) {
+                    onClose(event);
+                    continue;
+                }
 
-            if (events[i].flags & EV_EOF) {
-                onClose(event);
-                continue;
-            }
+                if (events[i].flags == EV_ERROR | events[i].flags == EV_EOF) continue;
+                if (event->events & EVENT_READ) {
+                    onRead(event);
+                }
+            } else if (events[i].filter == EVFILT_WRITE) {
+                if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
+                    onError(event);
+                    continue;
+                }
 
-            if (events[i].flags == EV_ERROR | events[i].flags == EV_EOF) continue;
-            if (event->events & EVENT_READ) {
-                onRead(event);
+                onWrite(reinterpret_cast<BaseEvent *>(events[i].udata));
             }
-        } else if (events[i].filter == EVFILT_WRITE) {
-            if (events[i].flags & EV_ERROR && event->events & EVENT_ERROR) {
-                onError(event);
-                continue;
-            }
-
-            onWrite(reinterpret_cast<BaseEvent *>(events[i].udata));
         }
     }
 }
@@ -135,7 +135,7 @@ sese::event::BaseEvent *sese::event::KqueueEventLoop::createEvent(int fd, unsign
         return nullptr;
     }
 
-    if(events & EVENT_WRITE) {
+    if (events & EVENT_WRITE) {
         if (!addNativeEvent(fd, EVFILT_WRITE, event)) {
             // 通常不会出错
             delete event;

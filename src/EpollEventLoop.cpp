@@ -50,43 +50,39 @@ void sese::event::EpollEventLoop::dispatch(uint32_t timeout) {
             } else {
                 continue;
             }
-        }
-        if (events[i].events & EPOLLIN) {
-            if (events[i].events & EPOLLRDHUP) {
-                onClose((BaseEvent *) events[i].data.ptr);
-            } else {
-                if (event->events & EVENT_READ) {
-                    onRead((BaseEvent *) events[i].data.ptr);
+        } else {
+            if (events[i].events & EPOLLIN) {
+                if (events[i].events & EPOLLRDHUP) {
+                    onClose((BaseEvent *) events[i].data.ptr);
+                } else {
+                    if (event->events & EVENT_READ) {
+                        onRead((BaseEvent *) events[i].data.ptr);
+                    }
                 }
             }
-        }
-        if (events[i].events & EPOLLOUT) {
-            onWrite((BaseEvent *) events[i].data.ptr);
-        }
-        if (events[i].events & EPOLLERR) {
-            onError((BaseEvent *) events[i].data.ptr);
+            if (events[i].events & EPOLLOUT) {
+                onWrite((BaseEvent *) events[i].data.ptr);
+            }
+            if (events[i].events & EPOLLERR) {
+                onError((BaseEvent *) events[i].data.ptr);
+            }
         }
     }
 }
 
 void sese::event::EpollEventLoop::onAccept(int fd) {
-
 }
 
 void sese::event::EpollEventLoop::onRead(BaseEvent *event) {
-
 }
 
 void sese::event::EpollEventLoop::onWrite(BaseEvent *event) {
-
 }
 
 void sese::event::EpollEventLoop::onError(BaseEvent *event) {
-
 }
 
 void sese::event::EpollEventLoop::onClose(sese::event::BaseEvent *event) {
-
 }
 
 sese::event::BaseEvent *sese::event::EpollEventLoop::createEvent(int fd, unsigned int events, void *data) {
