@@ -3,6 +3,8 @@
 .fleet
 .vscode
 cmake-build-*
+bazel-*
+.clwb
 
 # Prerequisites
 *.d
