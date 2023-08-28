@@ -14,11 +14,6 @@ cc_library(
         ],
     }),
     hdrs = select({
-        "//conditions:default": [
-            "include/sese/BaseEvent.h",
-            "include/sese/BaseEventConvert.h",
-            "include/sese/BaseEventLoop.h",
-        ],
         "@platforms//os:windows": [
             "include/sese/event/WSAEvent.h",
             "include/sese/event/WSAEventConvert.h",
@@ -33,11 +28,19 @@ cc_library(
             "include/sese/event/KqueueEvent.h",
             "include/sese/event/KqueueEventLoop.h",
         ],
-    }),
+    }) + [
+    	"include/sese/event/Event.h",
+    	"include/sese/event/BaseEvent.h",
+    	"include/sese/event/BaseEventConvert.h",
+    	"include/sese/event/BaseEventLoop.h",
+    ],
     copts = select({
         "@platforms//os:windows": [
             "/utf-8",
         ],
+	"//conditions:default": [
+	    "-std=c++11"
+	],
     }),
     includes = [
         "include",

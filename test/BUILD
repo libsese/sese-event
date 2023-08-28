@@ -15,11 +15,15 @@ cc_test(
         "@platforms//os:windows": [
             "/utf-8",
         ],
+        "//conditions:default": [
+            "-std=c++17"
+        ],
     }),
     linkopts = select({
         "@platforms//os:windows": [
             "-DEFAULTLIB:ws2_32.lib",
         ],
+        "//conditions:default": [],
     }),
     deps = [
         "@com_google_googletest//:gtest_main",
