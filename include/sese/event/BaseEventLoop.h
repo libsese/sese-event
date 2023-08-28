@@ -1,7 +1,5 @@
 #pragma once
 
-#include "sese/event/EpollEvent.h"
-
 #include <cstdint>
 
 namespace sese {
