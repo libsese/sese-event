@@ -14,9 +14,9 @@ if (SESE_EVENT_BUILD_TEST)
     endif ()
 endif ()
 
-project(sese-event VERSION 0.1.4)
+project(sese-event VERSION 0.1.5)
 
-add_library(Event SHARED)
+add_library(Event)
 
 set_target_properties(
         Event
@@ -26,21 +26,6 @@ set_target_properties(
 
 target_include_directories(
         Event
-        PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-)
-
-add_library(Event-static STATIC)
-
-set_target_properties(
-        Event-static
-        PROPERTIES
-        CXX_STANDARD 11
-)
-
-target_include_directories(
-        Event-static
         PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -52,8 +37,8 @@ if (WIN32)
             PROPERTIES
             WINDOWS_EXPORT_ALL_SYMBOLS ON
             OUTPUT_NAME "sese.event"
+            PREFIX ""
     )
-    target_compile_options(Event PRIVATE /utf-8)
     target_sources(
             Event
             PRIVATE
@@ -61,6 +46,10 @@ if (WIN32)
             src/WSAEventConvert.cpp
     )
     target_link_libraries(Event PRIVATE ws2_32)
+
+    if (${MSVC})
+        target_compile_options(Event PRIVATE /utf-8)
+    endif ()
 elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set_target_properties(
             Event
@@ -90,8 +79,6 @@ else ()
     message(FATAL_ERROR "Unknown system type")
 endif ()
 
-target_sources(Event-static PRIVATE $<TARGET_OBJECTS:Event>)
-
 if (SESE_EVENT_BUILD_TEST)
     enable_testing()
     add_subdirectory(test)
@@ -106,7 +93,7 @@ configure_package_config_file(
 )
 
 install(
-        TARGETS Event Event-static
+        TARGETS Event
         EXPORT SeseEventTargets
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib

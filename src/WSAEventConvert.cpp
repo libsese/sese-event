@@ -1,6 +1,6 @@
 #include "sese/event/WSAEventConvert.h"
 
-#include <Winsock2.h>
+#include <winsock2.h>
 
 unsigned int sese::event::WSAEventConvert::fromNativeEvent(int event) {
     unsigned result = 0;

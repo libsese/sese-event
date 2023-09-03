@@ -5,7 +5,7 @@
 #include "sese/event/WSAEventConvert.h"
 
 #include <atomic>
-#include <mutex>
+// #include <mutex>
 
 namespace sese {
     namespace event {
@@ -48,7 +48,7 @@ protected:
     void *wsaEvent{nullptr};
     WSAEventConvert convert;
 
-    std::mutex mutex;
+    // std::mutex mutex;
     unsigned long numbers = 0;
     unsigned long long sockets[MAX_EVENT_SIZE]{};
     void *wsaEvents[MAX_EVENT_SIZE]{};

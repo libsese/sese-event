@@ -1,6 +1,6 @@
 #include "sese/event/WSAEventLoop.h"
 
-#include <Winsock2.h>
+#include <winsock2.h>
 
 bool sese::event::WSAEventLoop::init() {
     wsaEvent = WSACreateEvent();
@@ -125,12 +125,12 @@ sese::event::BaseEvent *sese::event::WSAEventLoop::createEvent(int fd, unsigned 
     event->data = data;
     event->wsaEvent = _wsaEvent;
 
-    mutex.lock();
+    // mutex.lock();
     sockets[numbers] = fd;
     wsaEvents[numbers] = _wsaEvent;
     this->events[numbers] = event;
     numbers += 1;
-    mutex.unlock();
+    // mutex.unlock();
 
     return event;
 }
