@@ -1,3 +1,8 @@
+// linux mingw64 需要伪装 Windows 版本
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
+
 #include "sese/event/BaseEvent.h"
 #include "sese/event/Event.h"
 #include "gtest/gtest.h"
@@ -5,8 +10,8 @@
 #include <thread>
 #include <chrono>
 #include <random>
-#include <Winsock2.h>
-#include <WS2tcpip.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 
 using namespace std::chrono_literals;
 

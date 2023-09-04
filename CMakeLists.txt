@@ -31,7 +31,7 @@ target_include_directories(
         $<INSTALL_INTERFACE:include>
 )
 
-if (WIN32)
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set_target_properties(
             Event
             PROPERTIES
@@ -45,7 +45,7 @@ if (WIN32)
             src/WSAEventLoop.cpp
             src/WSAEventConvert.cpp
     )
-    target_link_libraries(Event PRIVATE ws2_32)
+    target_link_libraries(Event PUBLIC ws2_32)
 
     if (${MSVC})
         target_compile_options(Event PRIVATE /utf-8)
