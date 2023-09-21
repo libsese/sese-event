@@ -105,7 +105,7 @@ void sese::event::KqueueEventLoop::onClose(sese::event::BaseEvent *event) {
 
 bool sese::event::KqueueEventLoop::addNativeEvent(int fd, uint32_t ev, void *data) const {
     struct kevent kevent {};
-    EV_SET(&kevent, fd, ev, EV_ADD | EV_ENABLE, 0, 0, data);
+    EV_SET(&kevent, fd, ev, EV_ADD | EV_ENABLE | EV_ONESHOT, 0, 0, data);
     return 0 == ::kevent(kqueue, &kevent, 1, nullptr, 0, nullptr);
 }
 

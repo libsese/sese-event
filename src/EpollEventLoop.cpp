@@ -51,20 +51,24 @@ void sese::event::EpollEventLoop::dispatch(uint32_t timeout) {
                 continue;
             }
         } else {
+            bool alive = true;
             if (events[i].events & EPOLLIN) {
                 if (events[i].events & EPOLLRDHUP) {
                     onClose((BaseEvent *) events[i].data.ptr);
+                    alive = false;
                 } else {
                     if (event->events & EVENT_READ) {
                         onRead((BaseEvent *) events[i].data.ptr);
                     }
                 }
             }
-            if (events[i].events & EPOLLOUT) {
-                onWrite((BaseEvent *) events[i].data.ptr);
-            }
-            if (events[i].events & EPOLLERR) {
-                onError((BaseEvent *) events[i].data.ptr);
+            if (alive) {
+                if (events[i].events & EPOLLOUT) {
+                    onWrite((BaseEvent *) events[i].data.ptr);
+                }
+                if (events[i].events & EPOLLERR) {
+                    onError((BaseEvent *) events[i].data.ptr);
+                }
             }
         }
     }
