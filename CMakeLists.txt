@@ -14,7 +14,7 @@ if (SESE_EVENT_BUILD_TEST)
     endif ()
 endif ()
 
-project(sese-event VERSION 0.1.5)
+project(sese-event VERSION 0.1.6)
 
 add_library(Event)
 
